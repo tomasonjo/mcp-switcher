@@ -39,7 +39,10 @@ npm run dev
   availability.
 - **Streaming** — SSE pipes text, `mcp_tool_use`/`mcp_tool_result`, and
   stdio `tool_use`/`tool_result` blocks into the UI as they arrive.
-- **Model picker** — Opus 4.7, Sonnet 4.6, Haiku 4.5.
+- **Model picker** — Anthropic (Opus 4.7, Sonnet 4.6, Haiku 4.5) and
+  **Ollama** (any locally installed tool-capable model — llama3.1+, qwen2.5+,
+  mistral-nemo, etc.). Ollama models are fetched live from
+  `$OLLAMA_BASE_URL/api/tags` (default `http://localhost:11434`).
 
 ## Notes & caveats
 
@@ -48,3 +51,9 @@ npm run dev
 - Templates with required env vars (e.g. Neo4j creds, `ANTHROPIC_API_KEY`) are
   added with placeholder values — click **Edit** on the card to fill them in.
 - Tool-use loop is capped at 16 turns per request.
+- **Ollama**: install and run `ollama serve`, pull a tool-capable model
+  (`ollama pull qwen2.5`), then pick it from the sidebar. With Ollama,
+  *all* enabled MCP servers — URL and stdio — are connected locally and
+  their tools are forwarded via Ollama's OpenAI-compatible tool-calling
+  API (no Anthropic managed connector involved). Override the endpoint
+  with `OLLAMA_BASE_URL` if Ollama isn't on `localhost:11434`.

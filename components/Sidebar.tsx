@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { McpServer } from "@/lib/types";
 import { randomId } from "@/lib/storage";
 import {
@@ -17,11 +17,17 @@ type Props = {
   onModelChange: (m: string) => void;
 };
 
-const MODEL_OPTIONS = [
+const ANTHROPIC_MODELS = [
   { id: "claude-opus-4-7", label: "Claude Opus 4.7" },
   { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
   { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
 ];
+
+type OllamaModelsResponse = {
+  models: string[];
+  baseUrl?: string;
+  error?: string;
+};
 
 export function Sidebar({ servers, onChange, model, onModelChange }: Props) {
   // Pending server being edited/created in the form. When non-null, the
@@ -30,6 +36,22 @@ export function Sidebar({ servers, onChange, model, onModelChange }: Props) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [ollama, setOllama] = useState<OllamaModelsResponse>({ models: [] });
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/ollama/models", { cache: "no-store" })
+      .then((r) => r.json() as Promise<OllamaModelsResponse>)
+      .then((d) => {
+        if (alive) setOllama(d);
+      })
+      .catch((e) => {
+        if (alive) setOllama({ models: [], error: String(e) });
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const existingNames = new Set(servers.map((s) => s.name));
 
@@ -144,12 +166,53 @@ export function Sidebar({ servers, onChange, model, onModelChange }: Props) {
           onChange={(e) => onModelChange(e.target.value)}
           className="w-full bg-[var(--color-panel-2)] border border-[var(--color-border)] rounded-md px-2.5 py-1.5 text-sm outline-none focus:border-[var(--color-accent)]"
         >
-          {MODEL_OPTIONS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
+          <optgroup label="Anthropic">
+            {ANTHROPIC_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </optgroup>
+          {ollama.models.length > 0 && (
+            <optgroup label="Ollama (local)">
+              {ollama.models.map((name) => (
+                <option key={`ollama:${name}`} value={`ollama:${name}`}>
+                  {name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {(() => {
+            const known = new Set<string>([
+              ...ANTHROPIC_MODELS.map((m) => m.id),
+              ...ollama.models.map((n) => `ollama:${n}`),
+            ]);
+            if (known.has(model)) return null;
+            return (
+              <option value={model}>
+                {model.startsWith("ollama:")
+                  ? `${model.slice(7)} (offline)`
+                  : model}
+              </option>
+            );
+          })()}
         </select>
+        <div className="mt-1.5 text-[10.5px] text-[var(--color-muted)] leading-snug">
+          {ollama.models.length > 0 ? (
+            <>
+              Ollama: {ollama.models.length} model
+              {ollama.models.length === 1 ? "" : "s"} at{" "}
+              <code>{ollama.baseUrl || "localhost:11434"}</code>
+            </>
+          ) : ollama.error ? (
+            <span className="text-amber-300/90">
+              Ollama unavailable — start <code>ollama serve</code> and reload
+              for local models.
+            </span>
+          ) : (
+            <span className="opacity-70">Checking Ollama…</span>
+          )}
+        </div>
       </div>
 
       <div className="px-4 py-3">

@@ -57,6 +57,35 @@ export const TEMPLATES: McpTemplate[] = [
     }),
   },
   {
+    id: "neo4j-wiki-memory",
+    label: "Neo4j Wiki Memory",
+    description:
+      "Wiki-style long-term memory backed by Neo4j — runs via uvx from tomasonjo/neo4j-wiki-memory.",
+    category: "neo4j",
+    requiredEnv: [
+      { key: "NEO4J_MEMORY_URI", hint: "neo4j+s://xxxxx.databases.neo4j.io" },
+      { key: "NEO4J_MEMORY_USERNAME", hint: "neo4j" },
+      { key: "NEO4J_MEMORY_PASSWORD", hint: "…" },
+      { key: "NEO4J_MEMORY_WIKI", hint: "default" },
+    ],
+    build: () => ({
+      transport: "stdio",
+      name: "neo4j-wiki-memory",
+      command: "uvx",
+      args: [
+        "--from",
+        "git+https://github.com/tomasonjo/neo4j-wiki-memory",
+        "neo4j-wiki-memory",
+      ],
+      env: {
+        NEO4J_MEMORY_URI: "neo4j+s://xxxxx.databases.neo4j.io",
+        NEO4J_MEMORY_USERNAME: "neo4j",
+        NEO4J_MEMORY_PASSWORD: "",
+        NEO4J_MEMORY_WIKI: "default",
+      },
+    }),
+  },
+  {
     id: "claude-managed-agents",
     label: "Claude Managed Agents",
     description:
